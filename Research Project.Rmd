@@ -1,0 +1,259 @@
+---
+title: "Research Project"
+author: "Eric Shin"
+date: '2022-10-06'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library("tidyverse")
+library("stringr")
+library("dplyr")
+library("plotly")
+library('DiagrammeR')
+```
+
+# Overview of the R Markdown Document
+The purpose of this R Markdown Document is to clean up the Michigan State University data set by extracting the important variables contained in the file names of the Michigan State University data set. The extraction of variables is very important because we will be able to analyze the data set better in terms of knowing the frequency of each variable that is appearing in the data set.  
+
+```{r loading data}
+
+#This is the chunk where the original msuids dataset is loaded into R. The filenames object is created as a new data set from the original msuids data set, but with name and id as the only two columns in the new data set. The head represents the number of rows that are in the new data set.
+
+msuids <- read.csv("msuids.csv")
+
+filenames <- msuids %>% 
+  select(name, id, parent, parentname)
+  
+```
+
+```{r variables}
+
+#This is the chunk where string lists are created for each file name in the data set. In each file name's string list, there are important variables separated by OR functions.
+
+Specific_Year <- "2009|2012|2013|2014|2015"
+
+Exam_Type <- "Exam1|Exam2|Midterm|Final|FinalExam|exam1|Midterm1"
+
+Instructor_Initials <- "BSM|TML|LD|DEM|Individual|Individiual"
+
+Question_Number <- "Q9|Q12|Q13|Q1|Q6|Q5|Q2|Q8"
+
+Specific_Semester <- "Spring|Fall|fall|S_"
+
+Question_Concept <- "BS110_2009Spring_BSM_Q2_Final_CXL|BS110_2009Spring_TML_Q2_Final_CXL|BS110_2009Spring_DEM_Q2_Final_CXL|IsleRoyale_GeneToEvolution_CXL|Gene to Evolution|BS110_2009Spring_TML_Q12_Final_CXL|BS110_2009Spring_BSM_Q12_Final_CXL|IsleRoyale_CarbonCycle_2013_CXL|IsleRoyale_CarbonCycle_DEM_CXL|Owl_CarbonCycle_CXL|Carbon Cycle|BS110_2009Spring_BSM_Q9_Midterm_CXL|BS110_2009Spring_TML_Q9_Midterm_CXL|DDTResistance_GeneToPhenotype_DEM_CXL|CFTR_GeneToPhenotype_CXL|Frogs_GeneToPhenotype_CXL|Gene to Phenotype"
+
+Question_Context <- "BS110_2009Spring_BSM_Q2_Final_CXL|BS110_2009Spring_TML_Q2_Final_CXL|BS110_2009Spring_DEM_Q2_Final_CXL|BS110_2009Spring_TML_Q12_Final_CXL|BS110_2009Spring_BSM_Q12_Final_CXL|IsleRoyale_GeneToEvolution_CXL|IsleRoyale_CarbonCycle_2013_CXL|IsleRoyale_CarbonCycle_DEM_CXL|Isle Royale|BS110_2009Spring_BSM_Q9_Midterm_CXL|BS110_2009Spring_TML_Q9_Midterm_CXL|DDTResistance_GeneToPhenotype_DEM_CXL|DDT Resistance|CFTR_GeneToPhenotype_CXL|CFTR|Owl_CarbonCycle_CXL|Owl|Frogs_GeneToPhenotype_CXL|Frogs"
+
+```
+
+```{r regex}
+
+#This is the chunk where both the string lists from the previous chunk and regular expressions are used to extract every important variable of each file name from the filenames data set. The str_extract function extracts every single variable that matches with either the variables from the string list or the regular expression, depending on the file name that is being extracted. The case_when function replaces values that do not match with a specific variable. The str_c function combines two column names into one individual column name. All of these functions are inside of the mutate function which creates variables based on existing variables from the original data set. The Extracted_Names data set is a new object and data set that is created from the extraction of the filenames data set using the mutate function. 
+
+Extracted_Names <- filenames %>% 
+  mutate(Year = str_extract(name, Specific_Year), 
+         ExamType = str_extract(name, Exam_Type),
+         Course = str_extract(name, "\\S{5}"),
+         Instructor = str_extract(name, Instructor_Initials),
+         QuestionNumber = str_extract(name, Question_Number),
+         Semester = str_extract(name, Specific_Semester),
+         StudentID = str_extract(name, "\\d{8,9}"),
+         QuestionConcept = str_extract(parentname, Question_Concept),
+         QuestionContext = str_extract(parentname, Question_Context),
+         Instructor = case_when(Instructor == "Individual" ~ "TML",
+                                Instructor == "Individiual" ~ "TML", TRUE ~ as.character(Instructor)),
+         Semester = case_when(Semester == "fall" ~ "Fall",
+                              Semester == "S_" ~ "Spring",
+                              TRUE ~ as.character(Semester)),
+         AcademicTerm = str_c(Semester, Year, sep = " "),
+         Course = case_when(Course == "Bs162" ~ "BS162", TRUE ~ as.character(Course)),
+         ExamType = case_when(ExamType == "exam1" ~ "Exam1", TRUE ~ as.character(ExamType)),
+
+Extracted_Names <- filenames %>% 
+  mutate(QuestionConcept = case_when(QuestionConcept %in% c("BS110_2009Spring_BSM_Q2_Final_CXL", "BS110_2009Spring_TML_Q2_Final_CXL", "BS110_2009Spring_DEM_Q2_Final_CXL", "IsleRoyale_GeneToEvolution_CXL") ~ "Gene to Evolution", TRUE ~ as.character(QuestionConcept)),
+         
+         QuestionConcept = case_when(QuestionConcept %in% c("BS110_2009Spring_TML_Q12_Final_CXL", "BS110_2009Spring_BSM_Q12_Final_CXL", "IsleRoyale_CarbonCycle_2013_CXL", "IsleRoyale_CarbonCycle_DEM_CXL", "Owl_CarbonCycle_CXL") ~ "Carbon Cycle", TRUE ~ as.character(QuestionConcept)),
+        
+          QuestionConcept = case_when(QuestionConcept %in% c("BS110_2009Spring_BSM_Q9_Midterm_CXL","BS110_2009Spring_TML_Q9_Midterm_CXL","Frogs_GeneToPhenotype_CXL", "DDTResistance_GeneToPhenotype_DEM_CXL", "CFTR_GeneToPhenotype_CXL") ~ "Gene to Phenotype", TRUE ~ as.character(QuestionConcept)),
+        
+          QuestionContext = case_when(QuestionContext %in% c("BS110_2009Spring_BSM_Q2_Final_CXL","BS110_2009Spring_TML_Q2_Final_CXL", "BS110_2009Spring_DEM_Q2_Final_CXL", "BS110_2009Spring_TML_Q12_Final_CXL", "BS110_2009Spring_BSM_Q12_Final_CXL", "IsleRoyale_GeneToEvolution_CXL", "IsleRoyale_CarbonCycle_2013_CXL", "IsleRoyale_CarbonCycle_DEM_CXL") ~ "Isle Royale", TRUE ~ as.character(QuestionContext)),
+        
+          QuestionContext = case_when(QuestionContext %in% c("BS110_2009Spring_BSM_Q9_Midterm_CXL", "BS110_2009Spring_TML_Q9_Midterm_CXL", "DDTResistance_GeneToPhenotype_DEM_CXL") ~ "DDT Resistance", TRUE ~ as.character(QuestionContext)),
+        
+          QuestionContext = case_when(QuestionContext %in% c("CFTR_GeneToPhenotype_CXL") ~ "CFTR", TRUE ~ as.character(QuestionContext)),
+          
+          QuestionContext = case_when(QuestionContext %in% c("Owl_CarbonCycle_CXL") ~ "Owl", TRUE ~ as.character(QuestionContext)),
+         
+          QuestionContext = case_when(QuestionContext %in% c("Frogs_GeneToPhenotype_CXL") ~ "Frogs", TRUE ~ as.character(QuestionContext)),
+         
+          QuestionType = str_c(QuestionConcept, QuestionContext, sep = "/")))
+         
+```
+
+```{r filter, include = FALSE}
+
+#This is the chunk where the "Not Available" values are identified and located in the extracted data set. We want to make sure that there are little to no "Not Available" values in the extracted data set.
+
+Extracted_Names %>%
+  filter_all(any_vars(is.na(.)))
+
+```
+
+```{r export new data frame to csv file}
+
+#This is the chunk where we export the extracted data set into a new csv file into Excel.
+
+write.csv(Extracted_Names, 'Extracted_Names.csv')
+
+```
+
+```{r variable count, echo = FALSE}
+
+#This is the chunk where we get the count of each specific variable for each file name. The count of each specific variable for a file name comes in separate tables.
+
+en = read.csv("Extracted_Names.csv")
+
+en_ExamType = en %>% group_by(ExamType) %>% tally()
+
+en_Course = en %>% group_by(Course) %>% tally()
+
+en_Instructor = en %>% group_by(Instructor) %>% tally()
+
+en_QuestionNumber = en %>% group_by(QuestionNumber) %>% tally()
+
+en_Semester = en %>% group_by(Semester) %>% tally()
+
+en_AcademicTerm = en %>% group_by(AcademicTerm) %>% tally()
+
+en_QuestionConcept = en %>% group_by(QuestionConcept) %>% tally()
+
+en_QuestionContext = en %>% group_by(QuestionContext) %>% tally()
+
+en_QuestionType = en %>% group_by(QuestionType) %>% tally()
+
+Group_Combinations = en %>% group_by(Course, Instructor, Year, Semester, ExamType, QuestionNumber) %>% summarise(Count = n())
+
+en %>% group_by(Course, Instructor, Year, Semester) %>% summarise(Count = n())
+ 
+```
+
+```{r ggplot}
+
+#This is the chunk where the count of each specific variable for each file name is visualized through separate ggplot bar graphs depending on the file name.
+
+ggplot(en_ExamType, aes(x = ExamType, y = n, fill = ExamType))+ geom_bar(stat = "identity") + ggtitle("The Frequency by ExamType (n = count)") + theme_minimal() + coord_flip() + labs(x = NULL, y = NULL) + theme(legend.position = "none")
+
+
+ggplot(en_Course, aes(x = Course, y = n, fill = Course)) + geom_bar(stat = "identity") + ggtitle("The Frequency by Course (n = count)") + theme_minimal() + coord_flip() + labs(x = NULL, y = NULL) + theme(legend.position = "none")
+
+
+ggplot(en_Instructor, aes(x = Instructor, y = n, fill = Instructor)) + geom_bar(stat = "identity") + ggtitle("The Frequency by Instructor (n = count)") + theme_minimal() + coord_flip() + labs(x = NULL, y = NULL) + theme(legend.position = "none")
+
+
+ggplot(en_QuestionNumber, aes(x = QuestionNumber, y = n, fill = QuestionNumber)) + geom_bar(stat = "identity") + ggtitle("The Frequency by QuestionNumber (n = count)") + theme_minimal() + coord_flip() + labs(x = NULL, y = NULL) + theme(legend.position = "none")
+
+
+ggplot(en_AcademicTerm, aes(x = AcademicTerm, y = n, fill = AcademicTerm)) + geom_bar(stat = "identity") + ggtitle("The Frequency by AcademicTerm (n = count)") + theme_minimal() + coord_flip() + labs(x = NULL, y = NULL) + theme(legend.position = "none")
+
+ggplot(en_QuestionConcept, aes(x = QuestionConcept, y = n, fill = QuestionConcept)) + geom_bar(stat = "identity") + ggtitle("The Frequency by QuestionConcept (n = count)") + theme_minimal() + coord_flip() + labs(x = NULL, y = NULL) + theme(legend.position = "none")
+
+ggplot(en_QuestionContext, aes(x = QuestionContext, y = n, fill = QuestionContext)) + geom_bar(stat = "identity") + ggtitle("The Frequency by QuestionContext (n = count)") + theme_minimal() + coord_flip() + labs(x = NULL, y = NULL) + theme(legend.position = "none")
+
+ggplot(en_QuestionType, aes(x = QuestionType, y = n, fill = QuestionType)) + geom_bar(stat = "identity") + ggtitle("The Frequency by QuestionType (n = count)") + theme_minimal() + coord_flip() + labs(x = NULL, y = NULL) + theme(legend.position = "none")
+
+```
+
+```{r diagram}
+
+#Diagram 1
+
+DiagrammeR::grViz("digraph {
+  graph [layout = dot, rankdir = TB]
+  
+  node [shape = rectangle]        
+  rec1 [label = 'Msuids Data Set']
+  rec2 [label = 'select(name, id, parent, parentname)']
+  rec3 [label =  'Filenames Data Set']
+  rec4 [label = 'Extracted_Names <- filenames %>%']
+  rec5 [label = 'Extracted_Names Data Set']
+  
+  # edge definitions with the node IDs
+  rec1 -> rec2 -> rec3 -> rec4 -> rec5}", height = 500)
+
+#Diagram 2
+
+DiagrammeR::grViz("digraph {
+  graph [layout = dot, rankdir = TB]
+  
+  node [shape = rectangle]        
+  rec1 [label = 'String Lists']
+  rec2 [label = 'Specific_Year']
+  rec3 [label =  'Exam_Type']
+  rec4 [label = 'Instructor_Initials']
+  rec5 [label = 'Question_Number']
+  rec6 [label = 'Specific_Semester']
+  rec7 [label = 'Question_Concept']
+  rec8 [label = 'Question_Context']
+  
+  # edge definitions with the node IDs
+  rec1 -> rec2
+  rec1 -> rec3
+  rec1 -> rec4
+  rec1 -> rec5
+  rec1 -> rec6
+  rec1 -> rec7
+  rec1 -> rec8}", height = 500)
+
+#Diagram 3
+
+DiagrammeR::grViz("digraph {
+  graph [layout = dot, rankdir = TB]
+  
+  node [shape = rectangle]        
+  rec1 [label = 'Variable String List']
+  rec2 [label = 'Extracted_Names <- filenames %>% ']
+  rec3 [label =  'mutate()']
+  rec4 [label = '*File Name* = str_extract(name, *String List*)']
+  rec5 [label = '*File Name* = str_extract(name, *Regular Expression*)']
+  rec6 [label = '*File Name* = str_extract(parentname, *String List*)']
+  rec7 [label = '*File Name* = case_when(*File Name* == *String List Variable* ~ *String List Variable*, TRUE ~ as.character(*File Name*))']
+  rec8 [label = '*File Name* = str_c(*File Name*, *File Name*, sep = (space))']
+  
+  # edge definitions with the node IDs
+  rec1 -> rec2 -> rec3
+  rec3 -> rec4
+  rec3 -> rec5
+  rec3 -> rec6
+  rec3 -> rec7
+  rec3 -> rec8}", height = 300)
+
+#Diagram 4
+
+DiagrammeR::grViz("digraph {
+  graph [layout = dot, rankdir = TB]
+  
+  node [shape = rectangle]        
+  rec1 [label = 'Variable String List']
+  rec2 [label = 'Extracted_Names <- filenames %>% ']
+  rec3 [label =  'mutate()']
+  rec4 [label = '*File Name* = case_when(*File Name* %in% c(*String List Variable*) ~ *String List Variable*. TRUE ~ as.character(*File Name*))']
+  rec5 [label = '*File Name* = str_c(*File Name*, *File Name*, sep = (/))']
+  
+  
+  # edge definitions with the node IDs
+  rec1 -> rec2 -> rec3
+  rec3 -> rec4
+  rec3 -> rec5}",
+  height = 300)
+
+```
+
+
+
+
+
+
+
