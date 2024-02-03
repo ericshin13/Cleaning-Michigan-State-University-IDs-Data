@@ -1,2 +1,3 @@
 # Data Cleaning Project
-Details about the project are located in the RMD file.
+Project code is located in the RMD file. 
+Research findings are located in both the docx file.
