@@ -3,4 +3,4 @@ This section of the ongoing SMALS research project aimed to clean up the Michiga
 ![Data Table Image](https://github.com/user-attachments/assets/2f4a72f3-aa69-4efe-a51f-e91a521a33f1)
 ![Graph Image](https://github.com/user-attachments/assets/93cdcbf7-16a5-4c22-840d-fa2a95d824b1)
 ## Project code is located in the RMD file. 
-## Link to research findings are located in the docx file.
+## Link to research findings is located in the docx file.
