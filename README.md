@@ -4,4 +4,5 @@ This project focused on cleaning the Michigan State University IDs data set (msu
 ![Graph Image](https://github.com/user-attachments/assets/93cdcbf7-16a5-4c22-840d-fa2a95d824b1)
 ## Technology Used: R Programming Language, Google Docs
 ## Project Code is located in the Rmd file
+## Cleaned Data is located in the csv file (Download raw file)
 ## Research Findings are located in the docx file (Download raw file)
